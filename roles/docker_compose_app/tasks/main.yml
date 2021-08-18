@@ -1,0 +1,65 @@
+---
+- block:
+  - name: Check the stat of the directory to clone to.
+    stat:
+      path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+    register: repo_directory
+
+  - name: Remove directory if recreate tag is specified.
+    ansible.builtin.file:
+      path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+      state: absent
+    register: "dir_removed"
+    tags: [ never, recreate ]
+  - name: Create the required directories.
+    ansible.builtin.file:
+      path: "{{ item }}"
+      state: directory
+      mode: '0755'
+    loop: "{{ docker_compose_app_directories_create }} + [ '{{ docker_compose_app_directory }}' ]"
+
+  - name: Git checkout.
+    ansible.builtin.git:
+      repo: "{{ docker_compose_app_repo_url }}"
+      dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+      version: v4.4.0
+      force: true
+    when: dir_removed is defined and dir_removed is not skipped and (docker_compose_app_repo_url | regex_search("^(?:https:\/\/)[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:\.git)$"))
+
+  - name: Register docker app release from github.
+    uri:
+      url: "https://api.github.com/repos/{{ docker_compose_app_github_repo }}/releases/latest"
+      return_content: true
+    register: "docker_compose_app__release"
+    when: docker_compose_app_github_repo | regex_search("^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$")
+
+  - name: Get docker app release from github.
+    get_url:
+      url: "{{ docker_compose_app__release.json.tarball_url }}"
+      dest: /tmp/docker-compose-app_release.tar.gz
+    when: docker_compose_app__release is not skipped
+
+  - name: Extract docker app release.
+    ansible.builtin.unarchive:
+      src: /tmp/docker-compose-app_release.tar.gz
+      dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+      remote_src: yes
+      extra_opts: [ --strip-components=1 ]
+    when: docker_compose_app__release is not skipped
+
+  - name: Copy Docker Compose .env file.
+    template:
+      src: "../../../templates/{{ docker_compose_app_appname }}/.env.j2"
+      dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}/.env"
+      mode: 0400
+    when: docker_compose_copy_env_file|default('true')|bool
+
+  - name: Deploy Docker Compose.
+    docker_compose:
+      project_src: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+      files:
+        - docker-compose.yml
+      state: present
+    when: docker_compose_deploy_default|default('true')|bool
+
+  become: true

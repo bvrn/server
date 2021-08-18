@@ -1,0 +1,75 @@
+---
+- hosts: all
+  become: true
+
+  handlers:
+    - include: handlers/docker-compose/main.yml
+
+  vars:
+    docker_install_compose: true
+    pip_install_packages:
+      - name: [docker, docker-compose]
+
+
+  roles:
+    - kwoodson.yedit
+    - basic
+    - role: docker_compose_app
+      docker_compose_app_directories_create:
+        - /opt/docker-compose/jitsi-meet
+        - /etc/jitsi/jibri
+        - /etc/jitsi/jicofo
+        - /etc/jitsi/jigasi
+        - /etc/jitsi/jvb
+        - /etc/jitsi/prosody/config
+        - /etc/jitsi/prosody/prosody-plugins-custom
+        - /etc/jitsi/transcripts
+        - /etc/jitsi/web/letsencrypt
+      docker_compose_app_appname: jitsi-meet
+      docker_compose_app_github_repo: jitsi/docker-jitsi-meet
+    - role: docker_compose_app
+      docker_compose_app_repo_url: https://github.com/stefanprodan/dockprom.git
+      docker_compose_app_appname: dockprom
+      docker_compose_copy_env_file: false
+      docker_compose_deploy_default: false
+
+  tasks:
+    - name: Modify dockprom docker-compose.yml file.
+      yedit:
+        src: /opt/docker-compose/dockprom/docker-compose.yml
+        key: "{{ item.key }}"
+        value: "{{ item.value }}"
+        state: "{{ item.state }}"
+      with_items:
+        - key: services.grafana.environment
+          state: absent
+          value:
+        - key: services.grafana.ports
+          state: present
+          value: |
+            - "3000:3000"
+        - key: services.prometheus.ports
+          state: present
+          value: |
+            - "9090:9090"
+        - key: services.alertmanager.ports
+          state: present
+          value: |
+            - "9093:9093"
+        - key: services.pushgateway.ports
+          state: present
+          value: |
+            - "9091:9091"
+    - name: Deploy dockprom Docker Compose.
+      docker_compose:
+        project_src: /opt/docker-compose/dockprom
+        files:
+          - docker-compose.yml
+        services:
+          - prometheus
+          - alertmanager
+          - nodeexporter
+          - cadvisor
+          - grafana
+          - pushgateway
+        state: present

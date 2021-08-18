@@ -1,0 +1,27 @@
+---
+- block:
+  - name: Set timezone to Europe/Berlin.
+    timezone:
+      name: Europe/Berlin
+
+  - name: Ansible Date
+    debug:
+      msg: "Timestamp: {{ ansible_date_time.date }}T{{ ansible_date_time.time }}, tz: {{ ansible_date_time.tz }}"
+
+  - name: Install some packages.
+    package:
+      name:
+        - cron
+        - neovim
+        - tmux
+      state: present
+
+  - name: Cron for cleaning up /tmp directory.
+    cron:
+      name: "Cleanup for /tmp"
+      special_time: daily
+      user: root
+      job: "find /tmp -type f -atime +10 -delete"
+      cron_file: cleanup-tmp
+
+  become: yes

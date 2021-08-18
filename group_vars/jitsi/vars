@@ -1,0 +1,6 @@
+---
+jicofo_auth_password: "{{ vault_jicofo_auth_password }}"
+jvb_auth_password: "{{ vault_jvb_auth_password }}"
+jigasi_xmpp_password: "{{ vault_jigasi_xmpp_password }}"
+jibri_recorder_password: "{{ vault_jibri_recorder_password }}"
+jibri_xmpp_password: "{{ vault_jibri_xmpp_password }}"
