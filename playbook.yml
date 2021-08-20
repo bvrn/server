@@ -2,9 +2,6 @@
 - hosts: all
   become: true
 
-  handlers:
-    - include: handlers/docker-compose/main.yml
-
   vars:
     docker_install_compose: true
     pip_install_packages:
