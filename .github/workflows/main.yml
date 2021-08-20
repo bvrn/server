@@ -29,6 +29,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install wheel for python pip.
+        run: pip3 install wheel
+
       - name: Install test dependencies.
         run: pip3 install ansible molecule molecule-docker docker yamllint ansible-lint
 
