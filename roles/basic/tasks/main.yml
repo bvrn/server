@@ -17,17 +17,8 @@
   - name: Install some packages.
     package:
       name:
-        - cron
         - neovim
         - tmux
       state: present
-
-  - name: Cron for cleaning up /tmp directory.
-    cron:
-      name: "Cleanup for /tmp"
-      special_time: daily
-      user: root
-      job: "find /tmp -type f -atime +10 -delete"
-      cron_file: cleanup-tmp
 
   become: yes
