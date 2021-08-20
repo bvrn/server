@@ -8,6 +8,12 @@
     debug:
       msg: "Timestamp: {{ ansible_date_time.date }}T{{ ansible_date_time.time }}, tz: {{ ansible_date_time.tz }}"
 
+  - name: Update apt cache.
+    apt:
+      update_cache: true
+      cache_valid_time: 3600
+    when: ansible_os_family == 'Debian'
+
   - name: Install some packages.
     package:
       name:
