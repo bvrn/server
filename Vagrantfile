@@ -10,11 +10,9 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "playbook.yml"
-    ansible.vault_password_file = "~/.ansible/vaults/bvrn/.vault.pw"
     ansible.tags = "all" # change to "all, recreate" to recreate git repos
     ansible.groups = {
-        "monitoring" => ["node0"],
-        "jitsi" => ["node0"]
+        "dev" => ["node0"],
     }
   end
 
