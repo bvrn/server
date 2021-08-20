@@ -38,6 +38,13 @@ jobs:
       - name: Install galaxy roles.
         run: ansible-galaxy install -r requirements.yml
 
+      - name: (Workaround) Remove all identities except of dev from vault_identity_list.
+        uses: jacobtomlinson/gha-find-replace@master
+        with:
+          find: "vault_identity_list.*"
+          replace: "vault_identity_list = dev@.vault-pass.dev"
+          include: "ansible.cfg"
+
       - name: Run Molecule tests.
         run: molecule test
         env:
