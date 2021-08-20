@@ -1,22 +1,22 @@
 ---
 - block:
-  - name: Check the stat of the directory to clone to.
-    stat:
-      path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
-    register: repo_directory
-
   - name: Remove directory if recreate tag is specified.
     ansible.builtin.file:
       path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
       state: absent
-    register: "dir_removed"
     tags: [ never, recreate ]
+
   - name: Create the required directories.
     ansible.builtin.file:
       path: "{{ item }}"
       state: directory
       mode: '0755'
-    loop: "{{ docker_compose_app_directories_create }} + [ '{{ docker_compose_app_directory }}' ]"
+    loop: "[ '{{ docker_compose_app_directory }}' ] + {{ docker_compose_app_directories_create }}"
+
+  - name: Check the stat of the directory to clone to.
+    stat:
+      path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+    register: repo_directory
 
   - name: Git checkout.
     ansible.builtin.git:
@@ -24,7 +24,7 @@
       dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
       version: v4.4.0
       force: true
-    when: dir_removed is defined and dir_removed is not skipped and (docker_compose_app_repo_url | regex_search("^(?:https:\/\/)[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:\.git)$"))
+    when: not repo_directory.stat.exists and (docker_compose_app_repo_url | regex_search("^(?:https:\/\/)[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:\.git)$"))
 
   - name: Register docker app release from github.
     uri:
@@ -49,7 +49,7 @@
 
   - name: Copy Docker Compose .env file.
     template:
-      src: "../../../templates/{{ docker_compose_app_appname }}/.env.j2"
+      src: "templates/{{ docker_compose_app_appname }}/.env.j2"
       dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}/.env"
       mode: 0400
     when: docker_compose_copy_env_file|default('true')|bool
