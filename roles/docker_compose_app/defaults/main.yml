@@ -1,12 +1,15 @@
 ---
-docker_compose_app_directory: /opt/docker-compose
+docker_compose_app_directory: "/opt/docker-compose"
 docker_compose_app_directories_create: []
-docker_compose_app_appname: dockercomposeapp
+docker_compose_app_appname: "dockercomposeapp"
 
 # app could be cloned via git or downloaded as release
 # docker_compose_app_repo_url and docker_compose_app_github_repo are mutually exclusive
 
 # git clone config
 docker_compose_app_repo_url: None
+
 # release download config
 docker_compose_app_github_repo: None
+
+docker_compose_app_version_ref: "HEAD"
