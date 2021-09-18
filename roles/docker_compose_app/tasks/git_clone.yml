@@ -1,0 +1,8 @@
+---
+
+- name: "Clone Git repository"
+  ansible.builtin.git:
+    repo: "{{ docker_compose_app_repo_url }}"
+    dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+    version: "{{ docker_compose_app_version_ref }}"
+    force: true
