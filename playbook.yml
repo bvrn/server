@@ -64,6 +64,11 @@
             - "9091:9091"
 
     - name: "Deploy dockprom Docker Compose"
+      # Environment variable 'CI' is always set to true on GitHub Action runners.
+      # Some compose examples may require specific things which are not fulfilled on shared runners, but are
+      # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
       docker_compose:
         project_src: "/opt/docker-compose/dockprom"
         files:

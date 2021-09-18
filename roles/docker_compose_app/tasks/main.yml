@@ -50,12 +50,12 @@
     mode: 0o400
 
 - name: "Deploy Docker Compose"
-  when:
-    - docker_compose_deploy_default | default(true)
   # Environment variable 'CI' is always set to true on GitHub Action runners.
   # Some compose examples may require specific things which are not fulfilled on shared runners, but are
   # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
-  ignore_errors: "{{ lookup('env', 'CI') | default(false) }}"
+  when:
+    - docker_compose_deploy_default | default(true)
+    - "not ({{ lookup('env', 'CI') | default(false) }})"
   community.docker.docker_compose:
     project_src: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
     files:
