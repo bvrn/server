@@ -14,6 +14,7 @@
   register: "docker_compose_app_temp"
 
 - name: Download docker app release from GitHub.
+  changed_when: False
   ansible.builtin.get_url:
     url: "{{ docker_compose_app__release.json.tarball_url }}"
     dest: "{{ docker_compose_app_temp.path }}/docker-compose-app_release.tar.gz"
