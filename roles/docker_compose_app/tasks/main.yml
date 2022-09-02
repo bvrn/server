@@ -15,7 +15,7 @@
     mode: 0o755
   loop: "{{ docker_compose_app_directories_create | union([docker_compose_app_directory]) | unique }}"
 
-- name: Check the stat of the directory to clone to.
+- name: "Check the stat of the app directory"
   ansible.builtin.stat:
     path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
   register: repo_directory
@@ -41,6 +41,13 @@
 ###
 # App
 ###
+- name: "Copy files"
+  when:
+    - docker_compose_copy_files
+  ansible.builtin.copy:
+    src: "files/{{ docker_compose_app_appname }}/"
+    dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}/"
+
 - name: "Copy Docker Compose .env file"
   when: 
     - docker_compose_copy_env_file | default(true)
@@ -49,15 +56,15 @@
     dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}/.env"
     mode: 0o400
 
-- name: "Deploy Docker Compose"
-  # Environment variable 'CI' is always set to true on GitHub Action runners.
-  # Some compose examples may require specific things which are not fulfilled on shared runners, but are
-  # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
-  when:
-    - docker_compose_deploy_default | default(true)
-    - "not ({{ lookup('env', 'CI') | default(false) }})"
-  community.docker.docker_compose:
-    project_src: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
-    files:
-      - "docker-compose.yml"
-    state: "present"
+#- name: "Deploy Docker Compose"
+#  # Environment variable 'CI' is always set to true on GitHub Action runners.
+#  # Some compose examples may require specific things which are not fulfilled on shared runners, but are
+#  # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
+#  when:
+#    - docker_compose_deploy_default | default(true)
+#    - "not ({{ lookup('env', 'CI') | default(false) }})"
+#  community.docker.docker_compose:
+#    project_src: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+#    files:
+#      - "docker-compose.yml"
+#    state: "present"

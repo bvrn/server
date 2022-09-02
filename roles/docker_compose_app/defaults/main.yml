@@ -2,8 +2,11 @@
 docker_compose_app_directory: "/opt/docker-compose"
 docker_compose_app_directories_create: []
 docker_compose_app_appname: "dockercomposeapp"
+docker_compose_files:
+  - "docker-compose.yml"
+docker_compose_copy_files: true
 
-# app could be cloned via git or downloaded as release
+# app could be cloned via git, downloaded as release or copied as template
 # docker_compose_app_repo_url and docker_compose_app_github_repo are mutually exclusive
 
 # git clone config

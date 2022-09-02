@@ -1,0 +1,26 @@
+version: '3.5'
+
+services:
+  openldap:
+    image: docker.io/bitnami/openldap:2.5
+    expose:
+      - 1389
+    ports:
+      - '127.0.0.1:1389:1389'
+    environment:
+      - BITNAMI_DEBUG=false
+      - LDAP_ROOT
+      - LDAP_ADMIN_USERNAME
+      - LDAP_ADMIN_PASSWORD
+    volumes:
+      - 'openldap_data:/bitnami/openldap'
+      - './ldifs:/ldifs'
+
+volumes:
+  openldap_data:
+    driver: local
+
+networks:
+  default:
+    external: true
+    name: ${NETWORK:-ldap}

@@ -14,6 +14,37 @@
     - "kwoodson.yedit"
     - name: "Set up basic stuff"
       role: "basic"
+
+    - name: "Install Nginx Proxy"
+      role: "docker_compose_app"
+      docker_compose_app_directories_create:
+        - "/opt/docker-compose/nginx-letsencrypt-proxy"
+        - "/opt/docker-compose/nginx-letsencrypt-proxy/data/acme.sh"
+        - "/opt/docker-compose/nginx-letsencrypt-proxy/data/certs"
+        - "/opt/docker-compose/nginx-letsencrypt-proxy/data/conf.d"
+        - "/opt/docker-compose/nginx-letsencrypt-proxy/data/html"
+        - "/opt/docker-compose/nginx-letsencrypt-proxy/data/htpasswd"
+        - "/opt/docker-compose/nginx-letsencrypt-proxy/data/vhost.d"
+      docker_compose_app_appname: "nginx-letsencrypt-proxy"
+      tags:
+        - nginx
+
+    - name: "Install Openldap"
+      role: "docker_compose_app"
+      docker_compose_app_directories_create:
+        - "/opt/docker-compose/openldap"
+      docker_compose_app_appname: "openldap"
+      tags:
+        - openldap
+
+    - name: "Install Keycloak"
+      role: "docker_compose_app"
+      docker_compose_app_directories_create:
+        - "/opt/docker-compose/keycloak"
+      docker_compose_app_appname: "keycloak"
+      tags:
+        - keycloak
+
     - name: "Install Jitsi"
       role: "docker_compose_app"
       docker_compose_app_directories_create:
@@ -26,58 +57,187 @@
         - "/etc/jitsi/prosody/prosody-plugins-custom"
         - "/etc/jitsi/transcripts"
         - "/etc/jitsi/web/letsencrypt"
+      docker_compose_files:
+        - "docker-compose.yml"
+        - "etherpad.yml"
       docker_compose_app_appname: "jitsi-meet"
       docker_compose_app_github_repo: "jitsi/docker-jitsi-meet"
+      tags:
+        - jitsi
 
-    - role: "docker_compose_app"
-      docker_compose_app_repo_url: "https://github.com/stefanprodan/dockprom.git"
-      docker_compose_app_appname: "dockprom"
-      docker_compose_copy_env_file: false
-      docker_compose_deploy_default: false
+#    - role: "docker_compose_app"
+#      docker_compose_app_repo_url: "https://github.com/stefanprodan/dockprom.git"
+#      docker_compose_app_appname: "dockprom"
+#      docker_compose_copy_env_file: false
+##      docker_compose_deploy_default: false
+
+    - name: "Install Limesurvey"
+      role: "docker_compose_app"
+      docker_compose_app_directories_create:
+        - "/opt/docker-compose/limesurvey"
+      docker_compose_app_appname: "limesurvey"
+      tags:
+        - limesurvey
+
+    - name: "Install Nextcloud"
+      role: "docker_compose_app"
+      docker_compose_app_directories_create:
+        - "/opt/docker-compose/nextcloud"
+      docker_compose_app_appname: "nextcloud"
+      tags:
+        - nextcloud
+
+    - name: "Install Mattermost"
+      role: "docker_compose_app"
+      docker_compose_app_directories_create:
+        - "/opt/docker-compose/mattermost"
+        - "/opt/docker-compose/mattermost/volumes/app/mattermost/config"
+        - "/opt/docker-compose/mattermost/volumes/app/mattermost/data"
+        - "/opt/docker-compose/mattermost/volumes/app/mattermost/logs"
+        - "/opt/docker-compose/mattermost/volumes/app/mattermost/plugins"
+        - "/opt/docker-compose/mattermost/volumes/app/mattermost/client/plugins"
+        - "/opt/docker-compose/mattermost/volumes/app/mattermost/bleve-indexes"
+      docker_compose_app_appname: "mattermost"
+      tags:
+        - mattermost
 
   tasks:
-    - name: "Modify dockprom docker-compose.yml file"
-      yedit:
-        src: "/opt/docker-compose/dockprom/docker-compose.yml"
-        key: "{{ item.key }}"
-        value: "{{ item.value }}"
-        state: "{{ item.state }}"
-      loop:
-        - key: "services.grafana.environment"
-          state: "absent"
-          value: ~
-        - key: "services.grafana.ports"
-          state: "present"
-          value: |
-            - "3000:3000"
-        - key: "services.prometheus.ports"
-          state: "present"
-          value: |
-            - "9090:9090"
-        - key: "services.alertmanager.ports"
-          state: "present"
-          value: |
-            - "9093:9093"
-        - key: "services.pushgateway.ports"
-          state: "present"
-          value: |
-            - "9091:9091"
+#    - name: "Modify dockprom docker-compose.yml file"
+#      yedit:
+#        src: "/opt/docker-compose/dockprom/docker-compose.yml"
+#        key: "{{ item.key }}"
+#        value: "{{ item.value }}"
+#        state: "{{ item.state }}"
+#      loop:
+#        - key: "services.grafana.environment"
+#          state: "absent"
+#          value: ~
+#        - key: "services.grafana.ports"
+#          state: "present"
+#          value: |
+#            - "3000:3000"
+#
+#    - name: "Deploy dockprom Docker Compose"
+#      # Environment variable 'CI' is always set to true on GitHub Action runners.
+#      # Some compose examples may require specific things which are not fulfilled on shared runners, but are
+#      # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
+#      when:
+#        - "not ({{ lookup('env', 'CI') | default(false) }})"
+#      docker_compose:
+#        project_src: "/opt/docker-compose/dockprom"
+#        files:
+#          - "docker-compose.yml"
+#        services:
+#          - "prometheus"
+#          - "alertmanager"
+#          - "nodeexporter"
+#          - "grafana"
+#        state: "present"
+#
+#    - name: "Copy nginx.tmpl"
+#      ansible.builtin.copy:
+#        src: "templates/nginx-letsencrypt-proxy/nginx.tmpl"
+#        dest: "/opt/docker-compose/nginx-letsencrypt-proxy/nginx.tmpl"
+#
+#    - name: "Copy conf.d files"
+#      ansible.builtin.copy:
+#        src: "templates/{{ item }}"
+#        dest: "/opt/docker-compose/nginx-letsencrypt-proxy/data/{{ item }}"
+#      with_fileglob:
+#        - "conf.d/*"
 
-    - name: "Deploy dockprom Docker Compose"
-      # Environment variable 'CI' is always set to true on GitHub Action runners.
-      # Some compose examples may require specific things which are not fulfilled on shared runners, but are
-      # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
+    - name: "Create proxy network"
+      community.docker.docker_network:
+        name: "proxy"
+
+    - name: "Deploy nginx-letsencrypt-proxy Docker Compose"
       when:
         - "not ({{ lookup('env', 'CI') | default(false) }})"
       docker_compose:
-        project_src: "/opt/docker-compose/dockprom"
+        project_src: "/opt/docker-compose/nginx-letsencrypt-proxy"
         files:
           - "docker-compose.yml"
-        services:
-          - "prometheus"
-          - "alertmanager"
-          - "nodeexporter"
-          - "cadvisor"
-          - "grafana"
-          - "pushgateway"
         state: "present"
+      tags:
+        - nginx
+
+    - name: "Deploy jitsi-meet Docker Compose"
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
+      docker_compose:
+        project_src: "/opt/docker-compose/jitsi-meet"
+        files:
+          - "docker-compose.yml"
+          - "etherpad.yml"
+        state: "present"
+      tags:
+        - jitsi
+
+    - name: "Deploy limesurvey Docker Compose"
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
+      docker_compose:
+        project_src: "/opt/docker-compose/limesurvey"
+        files:
+          - "docker-compose.yml"
+        state: "present"
+      tags:
+        - limesurvey
+
+    - name: "Create ldap network"
+      community.docker.docker_network:
+        name: "ldap"
+
+    - name: "Deploy openldap Docker Compose"
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
+      docker_compose:
+        project_src: "/opt/docker-compose/openldap"
+        files:
+          - "docker-compose.yml"
+        state: "present"
+      tags:
+        - openldap
+
+    - name: "Deploy keycloak Docker Compose"
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
+      docker_compose:
+        project_src: "/opt/docker-compose/keycloak"
+        files:
+          - "docker-compose.yml"
+        state: "present"
+      tags:
+        - keycloak
+
+    - name: "Deploy nextcloud Docker Compose"
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
+      docker_compose:
+        project_src: "/opt/docker-compose/nextcloud"
+        files:
+          - "docker-compose.yml"
+        state: "present"
+      tags:
+        - nexcloud
+
+    - name: "Chown mattermost volume dirs"
+      ansible.builtin.file:
+        path: /opt/docker-compose/mattermost/volumes/app/mattermost
+        state: directory
+        recurse: yes
+        owner: 2000
+        group: 2000
+      tags:
+        - mattermost
+
+    - name: "Deploy mattermost Docker Compose"
+      when:
+        - "not ({{ lookup('env', 'CI') | default(false) }})"
+      docker_compose:
+        project_src: "/opt/docker-compose/mattermost"
+        files:
+          - "docker-compose.yml"
+        state: "present"
+      tags:
+        - mattermost

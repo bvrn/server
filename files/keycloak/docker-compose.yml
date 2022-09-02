@@ -1,0 +1,58 @@
+version: '3'
+
+volumes:
+  postgresql_data:
+      driver: local
+
+services:
+  postgresql:
+      image: docker.io/bitnami/postgresql:11
+      environment:
+        - POSTGRESQL_USERNAME=${KEYCLOAK_DATABASE_USER:-bn_keycloak}
+        - POSTGRESQL_PASSWORD=${KEYCLOAK_DATABASE_PASSWORD:?KEYCLOAK_DATABASE_PASSWORD needs to be defined in .env file}
+        - POSTGRESQL_DATABASE=${KEYCLOAK_DATABASE_NAME:-bitnami_keycloak}
+      volumes:
+        - 'postgresql_data:/bitnami/postgresql'
+      networks:
+        - default
+
+  keycloak:
+      image: docker.io/bitnami/keycloak:18.0.1
+      environment:
+        - KEYCLOAK_CREATE_ADMIN_USER
+        - KEYCLOAK_ADMIN_USER
+        - KEYCLOAK_ADMIN_PASSWORD
+        - KEYCLOAK_MANAGEMENT_USER
+        - KEYCLOAK_MANAGEMENT_PASSWORD
+        - KEYCLOAK_DATABASE_HOST
+        - KEYCLOAK_DATABASE_PORT
+        - KEYCLOAK_DATABASE_NAME
+        - KEYCLOAK_DATABASE_USER
+        - KEYCLOAK_DATABASE_PASSWORD
+        - KEYCLOAK_DATABASE_SCHEMA
+        - KEYCLOAK_JDBC_PARAMS
+        - KEYCLOAK_HTTP_PORT
+        - KEYCLOAK_HTTPS_PORT
+        - KEYCLOAK_BIND_ADDRESS
+        - KEYCLOAK_PROXY
+        - KEYCLOAK_PRODUCTION
+        - VIRTUAL_HOST
+        - VIRTUAL_PORT
+        - LETSENCRYPT_HOST
+        - LETSENCRYPT_EMAIL
+      expose:
+        - 8080
+      depends_on:
+        - postgresql
+      volumes:
+        - './themes/bvrn:/opt/bitnami/keycloak/themes/bvrn'
+      networks:
+        - proxy
+        - ldap
+        - default
+
+networks:
+    proxy:
+        external: true
+    ldap:
+        external: true
