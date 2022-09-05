@@ -1,0 +1,70 @@
+---
+
+- name: "Remove directory if recreate tag is specified"
+  ansible.builtin.file:
+    path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+    state: absent
+  tags: 
+    - "never"
+    - "recreate"
+
+- name: "Create directories"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: "directory"
+    mode: 0o755
+  loop: "{{ docker_compose_app_directories_create | union([docker_compose_app_directory]) | unique }}"
+
+- name: "Check the stat of the app directory"
+  ansible.builtin.stat:
+    path: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+  register: repo_directory
+
+###
+# Docker App
+###
+- name: "Clone App from GitHub"
+  vars:
+    git_repo_uri_regex: "^(?:https://)[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#\\[\\]@!\\$&'\\(\\)\\*\\+,;=.]+(?:\\.git)$"
+  when: 
+    - not repo_directory.stat.exists
+    - docker_compose_app_repo_url | regex_search(git_repo_uri_regex)
+  ansible.builtin.include_tasks: "git_clone.yml"
+
+- name: "Download App from GitHub release"
+  vars:
+    git_repo_name_regex: '^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$'
+  when: 
+    - docker_compose_app_github_repo | regex_search(git_repo_name_regex)
+  ansible.builtin.include_tasks: "git_download.yml"
+
+###
+# App
+###
+- name: "Copy files"
+  when:
+    - docker_compose_copy_files
+  ansible.builtin.copy:
+    src: "files/{{ docker_compose_app_appname }}/"
+    dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}/"
+
+- name: "Copy Docker Compose .env file"
+  when: 
+    - docker_compose_copy_env_file | default(true)
+  ansible.builtin.template:
+    src: "templates/{{ docker_compose_app_appname }}/.env.j2"
+    dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}/.env"
+    mode: 0o400
+
+#- name: "Deploy Docker Compose"
+#  # Environment variable 'CI' is always set to true on GitHub Action runners.
+#  # Some compose examples may require specific things which are not fulfilled on shared runners, but are
+#  # fulfilled on our dedicated infrastructure, e.g. access to /dev/shm or /dev/snd.
+#  when:
+#    - docker_compose_deploy_default | default(true)
+#    - "not ({{ lookup('env', 'CI') | default(false) }})"
+#  community.docker.docker_compose:
+#    project_src: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+#    files:
+#      - "docker-compose.yml"
+#    state: "present"

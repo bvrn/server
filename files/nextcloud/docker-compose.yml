@@ -1,0 +1,73 @@
+version: '3.2'
+
+services:
+  db:
+    image: postgres:13.6-alpine3.15
+    restart: always
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_USER
+
+  redis:
+    image: redis:alpine
+    restart: always
+
+  app:
+    build: ./app
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - POSTGRES_HOST
+      - REDIS_HOST
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_USER
+    depends_on:
+      - db
+      - redis
+
+  web:
+    image: nginx:stable-alpine
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html:ro
+      - type: bind
+        source: ./nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+    environment:
+      - VIRTUAL_HOST
+      - VIRTUAL_PORT
+      - LETSENCRYPT_HOST
+      - LETSENCRYPT_EMAIL
+    depends_on:
+      - app
+    networks:
+      - proxy
+      - default
+
+  cron:
+    build: ./app
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db:
+  nextcloud:
+  certs:
+  acme:
+  vhost.d:
+  html:
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,28 @@
+---
+
+- name: "Fetch docker app release string from GitHub"
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/{{ docker_compose_app_github_repo }}/releases/latest"
+    return_content: true
+  register: "docker_compose_app__release"
+
+- name: "Create temporary download directory"
+  changed_when: False
+  ansible.builtin.tempfile:
+    state: "directory"
+    suffix: "{{ docker_compose_app_github_repo | replace('/', '-') }}"
+  register: "docker_compose_app_temp"
+
+- name: Download docker app release from GitHub.
+  changed_when: False
+  ansible.builtin.get_url:
+    url: "{{ docker_compose_app__release.json.tarball_url }}"
+    dest: "{{ docker_compose_app_temp.path }}/docker-compose-app_release.tar.gz"
+
+- name: Extract docker app release.
+  ansible.builtin.unarchive:
+    src: "{{ docker_compose_app_temp.path }}/docker-compose-app_release.tar.gz"
+    dest: "{{ docker_compose_app_directory }}/{{ docker_compose_app_appname }}"
+    remote_src: true
+    extra_opts: 
+      - "--strip-components=1"

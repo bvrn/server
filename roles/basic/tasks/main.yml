@@ -1,0 +1,47 @@
+---
+
+- name: "Set timezone to Europe/Berlin"
+  timezone:
+    name: "Europe/Berlin"
+
+- name: "Update apt cache"
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when:
+    - ansible_os_family == 'Debian'
+
+- name: "Install packages"
+  package:
+    name:
+      - "neovim"
+      - "tmux"
+      - "ufw"
+    state: "present"
+
+- name: "Allow OpenSSH port"
+  community.general.ufw:
+    state: "enabled"
+    rule: allow
+    name: OpenSSH
+
+- name: "Allow some some TCP ports"
+  community.general.ufw:
+    state: "enabled"
+    rule: allow
+    port: "{{ item }}"
+    proto: "tcp"
+  loop:
+    - '80'
+    - '443'
+
+- name: "Deny everything and enable UFW"
+  community.general.ufw:
+    state: "enabled"
+    policy: "deny"
+
+- name: "Enable service ufw"
+  ansible.builtin.service:
+    name: "ufw"
+    enabled: yes
+    state: "started"
